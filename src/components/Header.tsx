@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   activeSection: string;
@@ -10,6 +11,8 @@ interface HeaderProps {
 }
 
 const Header = ({ activeSection, setActiveSection, cartItemsCount, onCartClick }: HeaderProps) => {
+  const navigate = useNavigate();
+  
   const menuItems = [
     { id: 'home', label: 'Главная' },
     { id: 'catalog', label: 'Каталог' },
@@ -50,8 +53,14 @@ const Header = ({ activeSection, setActiveSection, cartItemsCount, onCartClick }
           </nav>
 
           <div className="flex items-center gap-3">
-            <Button variant="outline" size="icon" className="hidden md:flex">
-              <Icon name="Search" size={20} />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden md:flex"
+              onClick={() => navigate('/admin')}
+              title="Админ-панель"
+            >
+              <Icon name="Settings" size={20} />
             </Button>
             <Button 
               variant="outline" 

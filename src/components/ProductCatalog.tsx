@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,19 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+
+interface Product {
+  id: number;
+  name: string;
+  article: string;
+  price: number;
+  unit: string;
+  category: string;
+  image_url: string;
+  in_stock: boolean;
+  discount: number;
+  description?: string;
+}
 
 interface ProductCatalogProps {
   onAddToCart: (product: any) => void;
@@ -15,15 +28,26 @@ const ProductCatalog = ({ onAddToCart }: ProductCatalogProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [priceRange, setPriceRange] = useState([0, 10000]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const products = [
-    { id: '1', name: 'Цемент М500', article: 'CEM-500', price: 450, unit: 'мешок 50кг', category: 'cement', image: 'https://cdn.poehali.dev/projects/fec1f740-834b-426a-a00d-39e45304fd36/files/d9387f04-11c6-4fe4-b961-a6d590c73e8e.jpg', inStock: true, discount: 15 },
-    { id: '2', name: 'Гипсокартон ГКЛ 12.5мм', article: 'GKL-125', price: 320, unit: 'лист', category: 'drywall', image: 'https://cdn.poehali.dev/projects/fec1f740-834b-426a-a00d-39e45304fd36/files/d9387f04-11c6-4fe4-b961-a6d590c73e8e.jpg', inStock: true },
-    { id: '3', name: 'Утеплитель Rockwool', article: 'RW-100', price: 890, unit: 'упаковка', category: 'insulation', image: 'https://cdn.poehali.dev/projects/fec1f740-834b-426a-a00d-39e45304fd36/files/d9387f04-11c6-4fe4-b961-a6d590c73e8e.jpg', inStock: true },
-    { id: '4', name: 'Профиль UD 27x28', article: 'PR-UD27', price: 180, unit: '3м', category: 'metal', image: 'https://cdn.poehali.dev/projects/fec1f740-834b-426a-a00d-39e45304fd36/files/d9387f04-11c6-4fe4-b961-a6d590c73e8e.jpg', inStock: true, discount: 10 },
-    { id: '5', name: 'Штукатурка гипсовая', article: 'SHT-30', price: 380, unit: 'мешок 30кг', category: 'mix', image: 'https://cdn.poehali.dev/projects/fec1f740-834b-426a-a00d-39e45304fd36/files/d9387f04-11c6-4fe4-b961-a6d590c73e8e.jpg', inStock: false },
-    { id: '6', name: 'Клей для плитки', article: 'KL-25', price: 420, unit: 'мешок 25кг', category: 'mix', image: 'https://cdn.poehali.dev/projects/fec1f740-834b-426a-a00d-39e45304fd36/files/d9387f04-11c6-4fe4-b961-a6d590c73e8e.jpg', inStock: true, discount: 20 },
-  ];
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/5c86afbd-07f6-4186-b72f-831232972ff2');
+      const data = await response.json();
+      setProducts(data.products);
+    } catch (error) {
+      console.error('Ошибка загрузки товаров:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = Array.from(new Set(products.map(p => p.category)));
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -32,6 +56,16 @@ const ProductCatalog = ({ onAddToCart }: ProductCatalogProps) => {
     const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
     return matchesSearch && matchesCategory && matchesPrice;
   });
+
+  if (loading) {
+    return (
+      <section className="py-16 min-h-screen">
+        <div className="container mx-auto px-4 flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Загрузка товаров...</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 min-h-screen">
@@ -58,11 +92,9 @@ const ProductCatalog = ({ onAddToCart }: ProductCatalogProps) => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Все категории</SelectItem>
-                      <SelectItem value="cement">Цемент</SelectItem>
-                      <SelectItem value="drywall">Гипсокартон</SelectItem>
-                      <SelectItem value="insulation">Утеплитель</SelectItem>
-                      <SelectItem value="metal">Металлопрокат</SelectItem>
-                      <SelectItem value="mix">Сухие смеси</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -111,16 +143,16 @@ const ProductCatalog = ({ onAddToCart }: ProductCatalogProps) => {
                 <Card key={product.id} className="overflow-hidden group hover:shadow-xl transition-all animate-scale-in" style={{ animationDelay: `${index * 50}ms` }}>
                   <div className="relative overflow-hidden h-48 bg-muted">
                     <img 
-                      src={product.image} 
+                      src={product.image_url} 
                       alt={product.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
-                    {product.discount && (
+                    {product.discount > 0 && (
                       <Badge className="absolute top-3 right-3 bg-red-500 hover:bg-red-600">
                         -{product.discount}%
                       </Badge>
                     )}
-                    {!product.inStock && (
+                    {!product.in_stock && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                         <Badge variant="secondary">Нет в наличии</Badge>
                       </div>
@@ -136,7 +168,7 @@ const ProductCatalog = ({ onAddToCart }: ProductCatalogProps) => {
                     
                     <div className="flex items-center justify-between">
                       <div>
-                        {product.discount ? (
+                        {product.discount > 0 ? (
                           <div>
                             <p className="text-xs text-muted-foreground line-through">{product.price} ₽</p>
                             <p className="text-2xl font-bold text-primary">
@@ -151,7 +183,7 @@ const ProductCatalog = ({ onAddToCart }: ProductCatalogProps) => {
                       <Button 
                         size="icon"
                         onClick={() => onAddToCart(product)}
-                        disabled={!product.inStock}
+                        disabled={!product.in_stock}
                         className="hover:scale-110 transition-transform"
                       >
                         <Icon name="ShoppingCart" size={20} />

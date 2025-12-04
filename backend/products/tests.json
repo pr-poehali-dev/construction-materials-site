@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Получение всех товаров",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Получение товаров по категории",
+      "method": "GET",
+      "path": "/?category=Цемент и смеси",
+      "expectedStatus": 200
+    }
+  ]
+}
